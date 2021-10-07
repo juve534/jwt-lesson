@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  nginx:
+    build:
+      context:  docker/nginx
+      dockerfile: Dockerfile
+    volumes:
+        - ./luna/public:/var/www/html/public
+    ports:
+        - 8087:80
+        - 8080:8080
+    environment:
+        - PHP_HOST=app
+    depends_on:
+        - app
+    networks:
+        - lesson_net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: local
+    volumes:
+      - ./luna/:/var/www/html:cached
+    networks:
+      - lesson_net
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    networks:
+      - lesson_net
+
+networks:
+  lesson_net:
+    driver: bridge
