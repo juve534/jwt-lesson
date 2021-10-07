@@ -1,0 +1,60 @@
+version: 2.1
+
+step-restore-cache: &step-restore-cache
+  restore-cache:
+    keys:
+      - composer-v1-{{ checksum "composer.lock" }}
+      - composer-v1-
+
+step-save-cache: &step-save-cache
+  save-cache:
+    key: composer-v1-{{ checksum "composer.lock" }}
+    paths:
+      - vendor
+
+jobs:
+  build:
+    docker:
+      - image: cimg/php:8.0
+    steps:
+      - checkout
+      - <<: *step-restore-cache
+      - run:
+          name: install dependencies
+          command: |
+            composer install -n --prefer-dist
+      - <<: *step-save-cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  test:
+    docker:
+      - image: cimg/php:8.0
+    working_directory: ~/app
+    steps:
+      - attach_workspace:
+          at: .
+      - run: sudo pear config-set php_ini /etc/php/8.0/cli/php.ini
+      - run: sudo pecl install pcov xdebug
+      - run: cp .env.example .env
+      - run: chmod -R 777 storage
+      - run: mkdir -p ~/reports/coverage
+      - run: php artisan key:generate
+      - run:
+          name: execute test
+          command: |
+            php -d pcov.enabled=1 ./vendor/bin/phpunit --coverage-html ~/reports/coverage tests/
+      - store_test_results:
+          path: ~/reports
+      - store_artifacts:
+          path: ~/reports
+
+workflows:
+  version: 2
+  default:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
