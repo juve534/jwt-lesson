@@ -6,7 +6,10 @@ namespace Packages\Services;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\UnencryptedToken;
+use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 
 class JwtTokenManagerService implements TokenManagerServiceInterface
 {
@@ -34,6 +37,38 @@ class JwtTokenManagerService implements TokenManagerServiceInterface
 
         Cache::put($accessKey, $token->toString(), 30 * 60);
 
-        return new TokenDto(token: $token->toString());
+        return new TokenDto(token: $token->toString(), accessKey: $accessKey);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getCredential(string $jwt): TokenDto
+    {
+        assert($this->config instanceof Configuration);
+
+        $token = $this->config->parser()->parse($jwt);
+        assert($token instanceof UnencryptedToken);
+        Log::debug('token', $token->claims()->all());
+
+        return new TokenDto(token: $token->toString(), accessKey: $token->claims()->get('accessKey'));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function expired(TokenDto $dto): void
+    {
+        Cache::forget($dto->getAccessKey());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function verify(string $jwt) : bool
+    {
+        $token = $this->getCredential($jwt);
+
+        return !is_null($token->getAccessKey()) && Cache::has($token->getAccessKey());
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,5 +19,6 @@ $version = 'v1';
 Route::group(['prefix' => $version], function () {
     Route::group(['prefix' => 'auth'], function () {
         Route::post('', \App\Http\Actions\Auth\Create\CreateAction::class);
+        Route::delete('', \App\Http\Actions\Auth\Delete\DeleteAction::class);
     });
 });
