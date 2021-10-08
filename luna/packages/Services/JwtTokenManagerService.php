@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Packages\Services;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
 use Lcobucci\JWT\Configuration;
 
 class JwtTokenManagerService implements TokenManagerServiceInterface
@@ -30,6 +31,8 @@ class JwtTokenManagerService implements TokenManagerServiceInterface
             ->expiresAt($now->addMinute(30))
             ->withClaim('accessKey', $accessKey)
             ->getToken($this->config->signer(), $this->config->signingKey());
+
+        Cache::put($accessKey, $token->toString(), 30 * 60);
 
         return new TokenDto(token: $token->toString());
     }
