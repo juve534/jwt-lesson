@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+$version = 'v1';
+Route::group(['prefix' => $version], function () {
+    Route::group(['prefix' => 'auth'], function () {
+        Route::post('', \App\Http\Actions\Auth\Create\CreateAction::class);
+    });
 });
